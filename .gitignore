@@ -1,0 +1,8 @@
+target/
+bin/
+*.ipr
+*.iml
+*.iws
+.classpath
+.project
+
