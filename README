@@ -1,0 +1,24 @@
+== Executable GShell WAR ==
+
+Maven plugin that creates an executable WAR that also runs a GShell that can access
+JMX Mbeans.
+
+      <plugin>
+        <groupId>org.brylex.maven</groupId>
+        <artifactId>embedded-jetty-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>doIt</id>
+            <phase>package</phase>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <mbean>java.util.logging:type=Logging</mbean>
+        </configuration>
+      </plugin>
+
+Enjoy!
+
