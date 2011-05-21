@@ -20,8 +20,6 @@ import org.codehaus.plexus.archiver.UnArchiver;
 import org.codehaus.plexus.archiver.jar.JarArchiver;
 import org.codehaus.plexus.archiver.jar.Manifest;
 import org.codehaus.plexus.archiver.manager.ArchiverManager;
-import org.codehaus.plexus.components.io.fileselectors.FileSelector;
-import org.codehaus.plexus.components.io.fileselectors.IncludeExcludeFileSelector;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -47,6 +45,23 @@ public class EmbeddedJettyMojo extends AbstractMojo
      * @readonly
      */
     private MavenProject project;
+
+    /**
+     * The name of the application (display name).
+     *
+     * @parameter default-value="${project.artifactId}"
+     * @required
+     * @readonly
+     */
+    private String applicationName;
+
+    /**
+     * The JMX MBean to connect to by default.
+     *
+     * @parameter
+     * @readonly
+     */
+    private String mbean = null;
 
     /**
      * The JAR archiver needed for archiving the classes directory into a JAR file under WEB-INF/lib.
@@ -130,25 +145,16 @@ public class EmbeddedJettyMojo extends AbstractMojo
 
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-
-        //unArchiver.setSourceFile(file);
-        //unArchiver.setDestDirectory(location);
-
-        System.err.println("Project: " + project);
-        System.err.println("Local: " + localRepository);
-        System.err.println("List: " + remoteRepositories);
-        System.err.println("Resolver: " + resolver);
-
         DefaultArtifact artifact = new DefaultArtifact("org.eclipse.jetty", "jetty-webapp", VersionRange.createFromVersion("8.0.0.M2"), "", "jar", null, new DefaultArtifactHandler(), false);
         DefaultArtifact artifact1 = new DefaultArtifact("org.eclipse.jetty", "jetty-jmx", VersionRange.createFromVersion("8.0.0.M2"), "", "jar", null, new DefaultArtifactHandler(), false);
         DefaultArtifact artifact2 = new DefaultArtifact("org.slf4j", "slf4j-log4j12", VersionRange.createFromVersion("1.6.1"), "", "jar", null, new DefaultArtifactHandler(), false);
         DefaultArtifact artifact3 = new DefaultArtifact("log4j", "log4j", VersionRange.createFromVersion("1.2.16"), "", "jar", null, new DefaultArtifactHandler(), false);
-
-        DefaultArtifact artifact4 = new DefaultArtifact("org.sonatype.gshell", "gshell-core", VersionRange.createFromVersion("2.6.5-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
+        DefaultArtifact artifact4 = new DefaultArtifact("org.sonatype.gshell", "gshell-core", VersionRange.createFromVersion("2.6.5.1-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
         DefaultArtifact artifact5 = new DefaultArtifact("org.sonatype.gshell.ext", "gshell-gossip", VersionRange.createFromVersion("2.6.5-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
         artifact5.setDependencyFilter(new ExclusionSetFilter(new String[]{"org.sonatype.gossip:gossip-slf4j"}));
         DefaultArtifact artifact6 = new DefaultArtifact("org.sonatype.gshell", "gshell-launcher", VersionRange.createFromVersion("2.6.5-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
-        DefaultArtifact artifact7 = new DefaultArtifact("org.sonatype.gshell.commands", "gshell-jmx", VersionRange.createFromVersion("2.6.5-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
+        DefaultArtifact artifact7 = new DefaultArtifact("org.sonatype.gshell.commands", "gshell-jmx", VersionRange.createFromVersion("2.6.5.1-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
+        DefaultArtifact artifact8 = new DefaultArtifact("org.sonatype.gshell.commands", "gshell-standard", VersionRange.createFromVersion("2.6.5-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
         DefaultArtifact plugin = new DefaultArtifact("org.brylex.maven", "embedded-jetty-plugin", VersionRange.createFromVersion("0.1-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
 
         try
@@ -194,12 +200,14 @@ public class EmbeddedJettyMojo extends AbstractMojo
             set2.add(artifact5);
             set2.add(artifact6);
             set2.add(artifact7);
+            set2.add(artifact8);
 
             resolver.resolveTransitively(set2, project.getArtifact(), repos, webInfServerRepository, new MavenMetadataSource());
 
             for (File file : webInfServerDir.listFiles())
             {
-                if (!file.getName().endsWith(".jar")) {
+                if (!file.getName().endsWith(".jar"))
+                {
                     file.delete();
                 }
             }
@@ -221,48 +229,42 @@ public class EmbeddedJettyMojo extends AbstractMojo
                 {
                     unArchiver.setSourceFile(f);
                     unArchiver.extract();
-                    System.err.println(f.getName() + " extracted...");
                     FileUtils.moveFileToDirectory(f, webInfServerDir, false);
                 }
             }
 
             for (File file : tmpDir.listFiles())
             {
-                if (file.getName().startsWith("Bootstrap")) {
+                if (file.getName().startsWith("Main"))
+                {
                     FileUtils.moveFileToDirectory(file, targetDir, false);
-                    System.err.println(file + " copied.");
                 }
 
-                if (file.getName().equals("log4j.properties")) {
+                if (file.getName().equals("log4j.properties"))
+                {
                     FileUtils.moveFileToDirectory(file, targetDir, false);
-                    System.err.println(file + " copied.");
                 }
             }
 
             File artifactFile = project.getArtifact().getFile();
-            System.err.println("WAR: " + artifactFile);
 
             unArchiver.setDestDirectory(targetDir);
             unArchiver.setSourceFile(artifactFile);
             unArchiver.extract();
-            System.err.println("Extracted WAR file " + artifactFile);
 
+            Bootstrap bootstrap = new Bootstrap(EmbeddedJettyServer.class, project.getGroupId(), project.getArtifactId(), project.getVersion());
+            bootstrap.setApplicationName(applicationName);
+            bootstrap.setMbeanName(mbean);
+            bootstrap.toDir(targetDir);
 
-
-            //MavenArchiveConfiguration configuration = new MavenArchiveConfiguration();
-            //configuration.addManifestEntry("Main-Class", getClass().getName());
-            //archiver.setManifest(configuration.getManifestFile());
-
-            //archiver.setManifest(defaultManifestFile);
+            String filename = String.format("target/%s-%s-standalone.war", project.getArtifactId(), project.getVersion());
 
             Manifest manifest = new Manifest();
-            manifest.addConfiguredAttribute(new Manifest.Attribute("Main-Class", "Bootstrap"));
+            manifest.addConfiguredAttribute(new Manifest.Attribute("Main-Class", "Main"));
             archiver.addConfiguredManifest(manifest);
-
-            archiver.setDestFile(new File("target/jalla.war"));
+            archiver.setDestFile(new File(filename));
             archiver.addDirectory(targetDir);
             archiver.createArchive();
-            System.err.println("Archive created...");
 
         } catch (Exception e)
         {

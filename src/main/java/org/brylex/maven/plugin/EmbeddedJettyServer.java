@@ -19,7 +19,6 @@ import java.util.Set;
 @Singleton
 public class EmbeddedJettyServer
 {
-    @PostConstruct
     public void start(URL webappRoot)
     {
         Server server = new Server();
