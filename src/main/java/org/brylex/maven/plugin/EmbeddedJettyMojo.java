@@ -10,22 +10,25 @@ import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.resolver.filter.ExclusionSetFilter;
 import org.apache.maven.artifact.versioning.VersionRange;
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.artifact.MavenMetadataSource;
+import org.codehaus.plexus.archiver.ArchiverException;
 import org.codehaus.plexus.archiver.UnArchiver;
 import org.codehaus.plexus.archiver.jar.JarArchiver;
 import org.codehaus.plexus.archiver.jar.Manifest;
 import org.codehaus.plexus.archiver.manager.ArchiverManager;
+import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
 
@@ -64,27 +67,12 @@ public class EmbeddedJettyMojo extends AbstractMojo
     private String mbean = null;
 
     /**
-     * The JAR archiver needed for archiving the classes directory into a JAR file under WEB-INF/lib.
-     *
-     * @component role="org.codehaus.plexus.archiver.Archiver" role-hint="jar"
-     * @required
-     */
-    private JarArchiver jarArchiver;
-
-    /**
      * To look up Archiver/UnArchiver implementations.
      *
      * @component role="org.codehaus.plexus.archiver.manager.ArchiverManager"
      * @required
      */
     private ArchiverManager archiverManager;
-
-    /**
-     * @parameter default-value="${session}"
-     * @readonly
-     * @required
-     */
-    private MavenSession session;
 
     /**
      * Local Maven repository where artifacts are cached during the build process.
@@ -103,6 +91,27 @@ public class EmbeddedJettyMojo extends AbstractMojo
     private List<ArtifactRepository> remoteRepositories;
 
     /**
+     * @parameter default-value="${project.build.directory}"
+     * @required
+     * @readonly
+     */
+    private File targetDir;
+
+    /**
+     * @parameter default-value="${project.build.directory}/gshell-war-generate/"
+     * @required
+     * @readonly
+     */
+    private File generateDir;
+
+    /**
+     * @parameter default-value="${project.build.directory}/gshell-war-generate/WEB-INF/server/"
+     * @required
+     * @readonly
+     */
+    private File libDir;
+
+    /**
      * Used to look up Artifacts in the remote repository.
      *
      * @component
@@ -114,168 +123,294 @@ public class EmbeddedJettyMojo extends AbstractMojo
      */
     private ArtifactRepositoryFactory repositoryFactory;
 
-    /**
-     * @component role="org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout"
-     */
-    private Map repositoryLayouts;
+    private List repositories;
 
-    /**
-     * Used to look up Artifacts in the remote repository.
-     *
-     * @component
-     */
-    protected org.apache.maven.artifact.factory.ArtifactFactory factory;
+    private Set<DependencyBuilder> dependencyBuilderSet;
 
-    /**
-     * @parameter expression="${project.build.outputDirectory}"
-     * @required
-     * @readonly
-     */
-    private File classesDir;
+    private void initRepositories()
+    {
+        this.repositories = new ArrayList();
+        repositories.add(localRepository);
+        repositories.addAll(remoteRepositories);
+    }
 
-    /**
-     * Path to the default MANIFEST file to use. It will be used if
-     * <code>useDefaultManifestFile</code> is set to <code>true</code>.
-     *
-     * @parameter expression="target/gen-tmp/META-INF/MANIFEST.MF"
-     * @required
-     * @readonly
-     */
-    private File defaultManifestFile;
+    private void configureDependencies()
+    {
+        groupId("org.eclipse.jetty").artifactId("jetty-webapp").version("8.0.0.M2");
+        groupId("org.eclipse.jetty").artifactId("jetty-jmx").version("8.0.0.M2");
+        groupId("org.slf4j").artifactId("slf4j-log4j12").version("1.6.1");
+        groupId("log4j").artifactId("log4j").version("1.2.16");
+        groupId("org.sonatype.gshell").artifactId("gshell-core").version("2.6.5.1-SNAPSHOT");
+        groupId("org.sonatype.gshell.ext").artifactId("gshell-gossip").version("2.6.5-SNAPSHOT").exclude("org.sonatype.gossip:gossip-slf4j");
+        groupId("org.sonatype.gshell").artifactId("gshell-launcher").version("2.6.5-SNAPSHOT");
+        groupId("org.sonatype.gshell.commands").artifactId("gshell-jmx").version("2.6.5.1-SNAPSHOT");
+        groupId("org.sonatype.gshell.commands").artifactId("gshell-standard").version("2.6.5-SNAPSHOT");
+    }
+
+    private Set<Artifact> getDependencies()
+    {
+        Set<Artifact> set = new HashSet<Artifact>(dependencyBuilderSet.size());
+        for (DependencyBuilder builder : dependencyBuilderSet)
+        {
+            set.add(builder.build());
+        }
+        return set;
+    }
 
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        DefaultArtifact artifact = new DefaultArtifact("org.eclipse.jetty", "jetty-webapp", VersionRange.createFromVersion("8.0.0.M2"), "", "jar", null, new DefaultArtifactHandler(), false);
-        DefaultArtifact artifact1 = new DefaultArtifact("org.eclipse.jetty", "jetty-jmx", VersionRange.createFromVersion("8.0.0.M2"), "", "jar", null, new DefaultArtifactHandler(), false);
-        DefaultArtifact artifact2 = new DefaultArtifact("org.slf4j", "slf4j-log4j12", VersionRange.createFromVersion("1.6.1"), "", "jar", null, new DefaultArtifactHandler(), false);
-        DefaultArtifact artifact3 = new DefaultArtifact("log4j", "log4j", VersionRange.createFromVersion("1.2.16"), "", "jar", null, new DefaultArtifactHandler(), false);
-        DefaultArtifact artifact4 = new DefaultArtifact("org.sonatype.gshell", "gshell-core", VersionRange.createFromVersion("2.6.5.1-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
-        DefaultArtifact artifact5 = new DefaultArtifact("org.sonatype.gshell.ext", "gshell-gossip", VersionRange.createFromVersion("2.6.5-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
-        artifact5.setDependencyFilter(new ExclusionSetFilter(new String[]{"org.sonatype.gossip:gossip-slf4j"}));
-        DefaultArtifact artifact6 = new DefaultArtifact("org.sonatype.gshell", "gshell-launcher", VersionRange.createFromVersion("2.6.5-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
-        DefaultArtifact artifact7 = new DefaultArtifact("org.sonatype.gshell.commands", "gshell-jmx", VersionRange.createFromVersion("2.6.5.1-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
-        DefaultArtifact artifact8 = new DefaultArtifact("org.sonatype.gshell.commands", "gshell-standard", VersionRange.createFromVersion("2.6.5-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
-        DefaultArtifact plugin = new DefaultArtifact("org.brylex.maven", "embedded-jetty-plugin", VersionRange.createFromVersion("0.1-SNAPSHOT"), "", "jar", null, new DefaultArtifactHandler(), false);
+        resolveRuntimeDependencies(libDir);
+        installBootstrapResources();
+        extractWar();
+        createArtifact();
+    }
+
+    private void createArtifact()
+    {
+        String filename = String.format("target/%s-%s-standalone.war", project.getArtifactId(), project.getVersion());
 
         try
         {
-            JarArchiver archiver = (JarArchiver) archiverManager.getArchiver("jar");
-            System.err.println("Archiver: " + archiver);
+            Manifest manifest = new Manifest();
+            manifest.addConfiguredAttribute(new Manifest.Attribute("Main-Class", "Main"));
+            JarArchiver archiver = getJarArchiver();
+            archiver.addConfiguredManifest(manifest);
+            archiver.setDestFile(new File(filename));
+            archiver.addDirectory(generateDir);
+            archiver.createArchive();
+            getLog().info("Executable WAR artifact '" + filename + "' successfully created.");
+        } catch (Exception e)
+        {
+            throw new RuntimeException("Unable to generate artifact '" + filename + "'.", e);
+        }
+    }
 
-            UnArchiver unArchiver = archiverManager.getUnArchiver("jar");
-            System.err.println("Unarchiver: " + unArchiver);
+    private void extractWar()
+    {
+        File artifactFile = project.getArtifact().getFile();
+        UnArchiver unArchiver = getJarUnArchiver();
+        unArchiver.setDestDirectory(generateDir);
+        unArchiver.setSourceFile(artifactFile);
+        try
+        {
+            unArchiver.extract();
+            getLog().info("WAR artifact '" + artifactFile + "' extracted to '" + generateDir + "'.");
+        } catch (ArchiverException e)
+        {
+            throw new RuntimeException("Unable to extract WAR artifact.", e);
+        }
+    }
 
-            File tmpLibDir = new File("target/tmp/lib");
-            tmpLibDir.mkdirs();
+    private void installBootstrapResources()
+    {
+        DefaultArtifact pluginArtifact = DependencyBuilder.groupId("org.brylex.maven").artifactId("embedded-jetty-plugin").version("0.1-SNAPSHOT").build();
+        File tmpDir = mkdirs(targetDir, "gshell-war-tmp/");
+        resolveDependency(pluginArtifact, tmpDir);
 
-            ArtifactRepository tmpLibRepository = repositoryFactory.createDeploymentArtifactRepository(
-                    "local",
-                    tmpLibDir.toURL().toExternalForm(),
-                    new FlatLayout(),
-                    true);
+        UnArchiver unArchiver = getJarUnArchiver();
+        unArchiver.setDestDirectory(tmpDir);
+        unArchiver.setOverwrite(true);
 
-            File webInfServerDir = new File("target/gen-tmp/WEB-INF/server/");
-            webInfServerDir.mkdirs();
-
-            ArtifactRepository webInfServerRepository = repositoryFactory.createDeploymentArtifactRepository(
-                    "local",
-                    webInfServerDir.toURL().toExternalForm(),
-                    new FlatLayout(),
-                    true);
-
-            HashSet set = new HashSet();
-            set.add(artifact);
-            set.add(artifact1);
-            set.add(artifact2);
-            set.add(artifact3);
-
-            List repos = new ArrayList();
-            repos.add(localRepository);
-            repos.addAll(remoteRepositories);
-
-            resolver.resolveTransitively(set, project.getArtifact(), repos, webInfServerRepository, new MavenMetadataSource());
-
-            HashSet set2 = new HashSet();
-            set2.add(artifact4);
-            set2.add(artifact5);
-            set2.add(artifact6);
-            set2.add(artifact7);
-            set2.add(artifact8);
-
-            resolver.resolveTransitively(set2, project.getArtifact(), repos, webInfServerRepository, new MavenMetadataSource());
-
-            for (File file : webInfServerDir.listFiles())
+        try
+        {
+            for (File file : tmpDir.listFiles())
             {
-                if (!file.getName().endsWith(".jar"))
+                if (file.getName().endsWith(".jar"))
                 {
-                    file.delete();
-                }
-            }
-
-            resolver.resolve(plugin, asList(localRepository), tmpLibRepository);
-
-            File targetDir = new File("target/gen-tmp/");
-            targetDir.mkdirs();
-
-            File tmpDir = new File("target/tmp/");
-            tmpDir.mkdirs();
-
-            unArchiver.setDestDirectory(tmpDir);
-            unArchiver.setOverwrite(true);
-
-            for (File f : tmpLibDir.listFiles())
-            {
-                if (f.getName().endsWith(".jar"))
-                {
-                    unArchiver.setSourceFile(f);
+                    unArchiver.setSourceFile(file);
                     unArchiver.extract();
-                    FileUtils.moveFileToDirectory(f, webInfServerDir, false);
+                    FileUtils.moveFileToDirectory(file, libDir, false);
                 }
             }
+        } catch (Exception e)
+        {
+            throw new RuntimeException("Unable to extract plugin artifact.", e);
+        }
 
+        try
+        {
             for (File file : tmpDir.listFiles())
             {
                 if (file.getName().startsWith("Main"))
                 {
-                    FileUtils.moveFileToDirectory(file, targetDir, false);
+                    FileUtils.moveFileToDirectory(file, generateDir, false);
                 }
 
                 if (file.getName().equals("log4j.properties"))
                 {
-                    FileUtils.moveFileToDirectory(file, targetDir, false);
+                    FileUtils.moveFileToDirectory(file, generateDir, false);
                 }
             }
+        } catch (IOException e)
+        {
+            throw new RuntimeException("Unable to copy bootstrap resources.", e);
+        }
 
-            File artifactFile = project.getArtifact().getFile();
+        Bootstrap bootstrap = new Bootstrap(EmbeddedJettyServer.class, project.getGroupId(), project.getArtifactId(), project.getVersion());
+        bootstrap.setApplicationName(applicationName);
+        bootstrap.setMbeanName(mbean);
+        bootstrap.toDir(generateDir);
+        getLog().info("Bootstrap resources installed.");
+    }
 
-            unArchiver.setDestDirectory(targetDir);
-            unArchiver.setSourceFile(artifactFile);
-            unArchiver.extract();
+    private File mkdirs(final String path)
+    {
+        File targetDir = new File(path);
+        targetDir.mkdirs();
+        return targetDir;
+    }
 
-            Bootstrap bootstrap = new Bootstrap(EmbeddedJettyServer.class, project.getGroupId(), project.getArtifactId(), project.getVersion());
-            bootstrap.setApplicationName(applicationName);
-            bootstrap.setMbeanName(mbean);
-            bootstrap.toDir(targetDir);
+    private File mkdirs(final File parentDir, final String path)
+    {
+        File targetDir = new File(parentDir, path);
+        targetDir.mkdirs();
+        return targetDir;
+    }
 
-            String filename = String.format("target/%s-%s-standalone.war", project.getArtifactId(), project.getVersion());
+    private void resolveDependency(Artifact artifact, File targetDir)
+    {
+        ArtifactRepository repository = createFlatRepository(targetDir);
 
-            Manifest manifest = new Manifest();
-            manifest.addConfiguredAttribute(new Manifest.Attribute("Main-Class", "Main"));
-            archiver.addConfiguredManifest(manifest);
-            archiver.setDestFile(new File(filename));
-            archiver.addDirectory(targetDir);
-            archiver.createArchive();
+        try
+        {
+            resolver.resolve(artifact, asList(localRepository), repository);
+        } catch (Exception e)
+        {
+            throw new RuntimeException("Unable to resolve artifact '" + artifact + "' to directory '" + targetDir + "'.", e);
+        }
+    }
+
+    private void resolveRuntimeDependencies(File artifactDir)
+    {
+        configureDependencies();
+        initRepositories();
+        
+        try
+        {
+            ArtifactRepository repository = createFlatRepository(artifactDir);
+            resolver.resolveTransitively(getDependencies(), project.getArtifact(), repositories, repository, new MavenMetadataSource());
+
+            cleanNonJarFiles(artifactDir);
+            getLog().info("Runtime dependencies resolved to '" + artifactDir + "'.");
 
         } catch (Exception e)
         {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            throw new RuntimeException("Unable to resolve dependencies.", e);
         }
-
     }
 
-    public MavenProject getProject()
+    private void cleanNonJarFiles(File artifactDir)
     {
-        return project;
+        for (File file : artifactDir.listFiles())
+        {
+            if (!file.getName().endsWith(".jar"))
+            {
+                file.delete();
+            }
+        }
+    }
+
+    private ArtifactRepository createFlatRepository(File artifactDir)
+    {
+        return repositoryFactory.createDeploymentArtifactRepository(
+                "local",
+                toUrlString(artifactDir),
+                new FlatLayout(),
+                true);
+    }
+
+    private String toUrlString(File file)
+    {
+        try
+        {
+            return file.toURI().toURL().toExternalForm();
+        } catch (MalformedURLException e)
+        {
+            throw new RuntimeException("Unable to create URL from file '" + file + "'.", e);
+        }
+    }
+
+    private UnArchiver getJarUnArchiver()
+    {
+        try
+        {
+            return archiverManager.getUnArchiver("jar");
+        } catch (NoSuchArchiverException e)
+        {
+            throw new IllegalStateException("Unarchiver for type 'jar' is not available.");
+        }
+    }
+
+    private JarArchiver getJarArchiver()
+    {
+        try
+        {
+            return (JarArchiver) archiverManager.getArchiver("jar");
+        } catch (NoSuchArchiverException e)
+        {
+            throw new IllegalStateException("Archiver for type 'jar' is not available.");
+        }
+    }
+
+    private DependencyBuilder groupId(final String groupId)
+    {
+
+        if (dependencyBuilderSet == null)
+        {
+            this.dependencyBuilderSet = new HashSet<DependencyBuilder>();
+        }
+
+        DependencyBuilder builder = new DependencyBuilder(groupId);
+        dependencyBuilderSet.add(builder);
+
+        return builder;
+    }
+
+    static class DependencyBuilder
+    {
+
+        private final String groupId;
+
+        private String artifactId;
+        private String version;
+        private Set<String> excludes;
+
+        DependencyBuilder(final String groupId)
+        {
+            this.groupId = groupId;
+            this.excludes = new HashSet<String>();
+        }
+
+        public static DependencyBuilder groupId(final String groupId)
+        {
+            return new DependencyBuilder(groupId);
+        }
+
+        DependencyBuilder artifactId(final String artifactId)
+        {
+            this.artifactId = artifactId;
+            return this;
+        }
+
+        DependencyBuilder version(final String version)
+        {
+            this.version = version;
+            return this;
+        }
+
+        DependencyBuilder exclude(final String excludeExpression)
+        {
+            excludes.add(excludeExpression);
+            return this;
+        }
+
+        DefaultArtifact build()
+        {
+            DefaultArtifact artifact = new DefaultArtifact(groupId, artifactId, VersionRange.createFromVersion(version), "", "jar", null, new DefaultArtifactHandler(), false);
+            artifact.setDependencyFilter(new ExclusionSetFilter(excludes));
+            return artifact;
+        }
+
     }
 
     public void setProject(MavenProject project)
