@@ -16,7 +16,7 @@ JMX Mbeans.
           </execution>
         </executions>
         <configuration>
-          <mbean>java.util.logging:type=Logging</mbean>
+          <applicationName>MyWeb</applicationName>
         </configuration>
       </plugin>
 
