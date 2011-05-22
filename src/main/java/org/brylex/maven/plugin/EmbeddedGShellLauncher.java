@@ -35,7 +35,6 @@ public class EmbeddedGShellLauncher extends GuiceMainSupport
     private final String version;
 
     private final String applicationName;
-    private final String mbeanName;
 
     public EmbeddedGShellLauncher(final URL webRoot)
     {
@@ -67,7 +66,6 @@ public class EmbeddedGShellLauncher extends GuiceMainSupport
         this.version = properties.getProperty("project.version");
 
         this.applicationName = properties.getProperty("application.name");
-        this.mbeanName = properties.getProperty("application.mbean");
     }
 
     public static void main(String[] args) throws Exception
@@ -83,11 +81,10 @@ public class EmbeddedGShellLauncher extends GuiceMainSupport
     {
         Shell shell = super.createShell();
 
-        if (mbeanName != null && mbeanName.trim().length() > 0) {
-            shell.getVariables().set(MBeanCommand.JMX_MBEAN, mbeanName);
-        } else {
+        if (!shell.getVariables().contains(MBeanCommand.JMX_MBEAN)) {
             shell.getVariables().set(MBeanCommand.JMX_MBEAN, "<NO MBEAN>");
         }
+        
         return shell;
     }
 
@@ -120,8 +117,6 @@ public class EmbeddedGShellLauncher extends GuiceMainSupport
                 bind(LoggingSystem.class).to(Log4JLoggingSystem.class);
                 bind(ConsolePrompt.class).to(ShellPrompt.class);
                 bind(ConsoleErrorHandler.class).to(ShellErrorHandler.class);
-
-                bind(String.class).annotatedWith(Names.named("JMX_DEFAULT_MBEAN")).toInstance(mbeanName);
             }
         };
 

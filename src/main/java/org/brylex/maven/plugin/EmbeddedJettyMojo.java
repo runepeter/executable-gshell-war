@@ -59,14 +59,6 @@ public class EmbeddedJettyMojo extends AbstractMojo
     private String applicationName;
 
     /**
-     * The JMX MBean to connect to by default.
-     *
-     * @parameter
-     * @readonly
-     */
-    private String mbean = null;
-
-    /**
      * To look up Archiver/UnArchiver implementations.
      *
      * @component role="org.codehaus.plexus.archiver.manager.ArchiverManager"
@@ -248,7 +240,6 @@ public class EmbeddedJettyMojo extends AbstractMojo
 
         Bootstrap bootstrap = new Bootstrap(EmbeddedJettyServer.class, project.getGroupId(), project.getArtifactId(), project.getVersion());
         bootstrap.setApplicationName(applicationName);
-        bootstrap.setMbeanName(mbean);
         bootstrap.toDir(generateDir);
         getLog().info("Bootstrap resources installed.");
     }

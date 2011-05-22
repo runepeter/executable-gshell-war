@@ -15,7 +15,6 @@ public class Bootstrap
     private final String version;
 
     private String applicationName = null;
-    private String mbeanName = "";
 
     public Bootstrap(final Class<?> mainClass, final String groupId, final String artifactId, final String version)
     {
@@ -28,11 +27,6 @@ public class Bootstrap
     public void setApplicationName(String applicationName)
     {
         this.applicationName = applicationName;
-    }
-
-    public void setMbeanName(final String mbeanName)
-    {
-        this.mbeanName = mbeanName == null ? "" : mbeanName;
     }
 
     public void toDir(final File dir)
@@ -52,7 +46,6 @@ public class Bootstrap
         properties.put("project.artifactId", artifactId);
         properties.put("project.version", version);
         properties.put("application.name", applicationName);
-        properties.put("application.mbean", mbeanName);
 
         FileWriter writer = null;
         try
