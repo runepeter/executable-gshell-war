@@ -12,11 +12,56 @@
   </parent>
 
   <groupId>org.brylex.maven</groupId>
-  <artifactId>embedded-jetty-plugin</artifactId>
+  <artifactId>executable-gshell-war</artifactId>
   <version>0.1-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>Brylex.org :: Embedded Maven Plugin</name>
+  <description>Generates an executable WAR file that runs an in-process Jetty instance and GShell with JMX support.</description>
+  <url>http://www.brylex.org/executable-gshell-war</url>
+
+  <organization>
+    <name>Brylex org.</name>
+    <url>http://www.brylex.org</url>
+  </organization>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:git://github.com/runepeter/executable-gshell-war.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/runepeter/executable-gshell-war.git</developerConnection>
+    <url>https://github.com/runepeter/executable-gshell-war</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>runepeter</id>
+      <name>Rune Peter Bjørnstad</name>
+      <email>runepeter@gmail.com</email>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>sonatype-nexus-snapshots</id>
+      <name>Sonatype Nexus Snapshots</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    </snapshotRepository>
+    <repository>
+      <id>sonatype-nexus-staging</id>
+      <name>Nexus Release Repository</name>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
   <prerequisites>
     <maven>${maven.version}</maven>
@@ -28,6 +73,9 @@
     <maven.archiver.version>2.4.1</maven.archiver.version>
     <gshell.version>2.6.5-SNAPSHOT</gshell.version>
     <slf4j.version>1.6.1</slf4j.version>
+
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
   <dependencyManagement>
