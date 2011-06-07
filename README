@@ -5,7 +5,7 @@ JMX Mbeans.
 
       <plugin>
         <groupId>org.brylex.maven</groupId>
-        <artifactId>embedded-jetty-plugin</artifactId>
+        <artifactId>executable-gshell-war</artifactId>
         <executions>
           <execution>
             <id>doIt</id>
