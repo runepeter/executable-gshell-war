@@ -195,7 +195,7 @@ public class EmbeddedJettyMojo extends AbstractMojo
 
     private void installBootstrapResources()
     {
-        DefaultArtifact pluginArtifact = DependencyBuilder.groupId("org.brylex.maven").artifactId("embedded-jetty-plugin").version("0.1-SNAPSHOT").build();
+        DefaultArtifact pluginArtifact = DependencyBuilder.groupId("org.brylex.maven").artifactId("executable-gshell-war").version("0.1-SNAPSHOT").build();
         File tmpDir = mkdirs(targetDir, "gshell-war-tmp/");
         resolveDependency(pluginArtifact, tmpDir);
 

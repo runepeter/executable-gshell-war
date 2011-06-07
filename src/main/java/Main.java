@@ -1,5 +1,3 @@
-import org.brylex.maven.plugin.EmbeddedGShellLauncher;
-
 import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -15,8 +13,8 @@ public class Main
 {
     public static void main(String[] args)
     {
-        JarClassLoader jarClassLoader = createClassLoader();
-        Thread.currentThread().setContextClassLoader(jarClassLoader);
+        JarClassLoader serverClassLoader = createClassLoader();
+        Thread.currentThread().setContextClassLoader(serverClassLoader);
 
         ProtectionDomain domain = Main.class.getProtectionDomain();
         URL location = domain.getCodeSource().getLocation();
@@ -54,6 +52,7 @@ public class Main
     private static JarClassLoader createClassLoader()
     {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+
         URLClassLoader systemClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
 
         return new JarClassLoader(systemClassLoader.getURLs(), contextClassLoader);
@@ -75,9 +74,9 @@ public class Main
             }
         }
 
-        private static boolean isJar(String fileName)
+        private static boolean isServerJar(String fileName)
         {
-            return fileName != null && fileName.toLowerCase().endsWith(".jar");
+            return fileName != null && fileName.startsWith("WEB-INF/server/") && fileName.toLowerCase().endsWith(".jar");
         }
 
         private static File jarEntryAsFile(JarFile jarFile, JarEntry jarEntry) throws IOException
@@ -122,7 +121,7 @@ public class Main
                 while (jarEntries.hasMoreElements())
                 {
                     JarEntry jarEntry = jarEntries.nextElement();
-                    if (!jarEntry.isDirectory() && isJar(jarEntry.getName()))
+                    if (!jarEntry.isDirectory() && isServerJar(jarEntry.getName()))
                     {
                         addJarResource(jarEntryAsFile(jarFile, jarEntry));
                     }
@@ -130,7 +129,7 @@ public class Main
 
             } catch (IOException e)
             {
-                e.printStackTrace();
+                throw new RuntimeException("Unable to instantiate server classloader.");
             }
         }
 
@@ -143,7 +142,7 @@ public class Main
             while (jarEntries.hasMoreElements())
             {
                 JarEntry jarEntry = jarEntries.nextElement();
-                if (!jarEntry.isDirectory() && isJar(jarEntry.getName()))
+                if (!jarEntry.isDirectory() && isServerJar(jarEntry.getName()))
                 {
                     addJarResource(jarEntryAsFile(jarFile, jarEntry));
                 }
