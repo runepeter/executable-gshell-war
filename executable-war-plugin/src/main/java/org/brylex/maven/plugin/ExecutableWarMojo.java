@@ -13,8 +13,8 @@ import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.MavenProjectHelper;
 import org.apache.maven.project.artifact.MavenMetadataSource;
 import org.codehaus.plexus.archiver.ArchiverException;
 import org.codehaus.plexus.archiver.UnArchiver;
@@ -34,10 +34,12 @@ import java.util.Set;
 import static java.util.Arrays.asList;
 
 /**
- * @requiresDependencyResolution runtime
+ * @author <a href="runepeter@gmail.com">Rune Peter Bjørnstad</a>
+ * @version $Id$
  * @goal generate
  * @phase package
  * @threadSafe
+ * @requiresDependencyResolution runtime
  */
 public class ExecutableWarMojo extends AbstractMojo {
     /**
@@ -50,13 +52,9 @@ public class ExecutableWarMojo extends AbstractMojo {
     private MavenProject project;
 
     /**
-     * The name of the application (display name).
-     *
-     * @parameter default-value="${project.artifactId}"
-     * @required
-     * @readonly
+     * @component
      */
-    private String applicationName;
+    private MavenProjectHelper projectHelper;
 
     /**
      * To look up Archiver/UnArchiver implementations.
@@ -85,9 +83,8 @@ public class ExecutableWarMojo extends AbstractMojo {
     /**
      * @parameter default-value="${project.build.directory}"
      * @required
-     * @readonly
      */
-    private File targetDir;
+    private File outputDirectory;
 
     /**
      * @parameter default-value="${project.build.directory}/executable-war/"
@@ -101,7 +98,7 @@ public class ExecutableWarMojo extends AbstractMojo {
      * @required
      * @readonly
      */
-    private File libDir;
+    private File serverLibDir;
 
     /**
      * Used to look up Artifacts in the remote repository.
@@ -114,6 +111,14 @@ public class ExecutableWarMojo extends AbstractMojo {
      * @component
      */
     private ArtifactRepositoryFactory repositoryFactory;
+
+    /**
+     * Whether this is the main artifact being built. Set to <code>false</code> if you don't want to install or
+     * deploy it to the local repository instead of the default one in an execution.
+     *
+     * @parameter expression="${primaryArtifact}" default-value="true"
+     */
+    private boolean primaryArtifact = true;
 
     private List<ArtifactRepository> repositories;
 
@@ -160,17 +165,22 @@ public class ExecutableWarMojo extends AbstractMojo {
 
     // todo rpb: make an option that replaces original WAR file.
     private void createArtifact() {
+
         String filename = String.format("target/%s-%s-standalone.war", project.getArtifactId(), project.getVersion());
+        File warFile = new File(project.getBasedir(), filename);
 
         try {
             Manifest manifest = new Manifest();
             manifest.addConfiguredAttribute(new Manifest.Attribute("Main-Class", "Main"));
             JarArchiver archiver = getJarArchiver();
             archiver.addConfiguredManifest(manifest);
-            archiver.setDestFile(new File(filename));
+            archiver.setDestFile(warFile);
             archiver.addDirectory(generateDir);
             archiver.createArchive();
             getLog().info("Executable WAR artifact [" + filename + "] successfully created.");
+
+            project.getArtifact().setFile(warFile);
+
         } catch (Exception e) {
             throw new RuntimeException("Unable to generate artifact [" + filename + "].", e);
         }
@@ -183,7 +193,7 @@ public class ExecutableWarMojo extends AbstractMojo {
         unArchiver.setSourceFile(artifactFile);
         try {
             unArchiver.extract();
-            getLog().info("WAR artifact '" + artifactFile + "' extracted to '" + generateDir + "'.");
+            getLog().info("WAR artifact [" + artifactFile + "] extracted to [" + generateDir + "].");
         } catch (ArchiverException e) {
             throw new RuntimeException("Unable to extract WAR artifact.", e);
         }
@@ -197,7 +207,7 @@ public class ExecutableWarMojo extends AbstractMojo {
                 .version("0.1-SNAPSHOT") // todo rpb: resolve from plugin pom.
                 .build();
 
-        File tmpDir = mkdirs(targetDir, "executable-war/tmp/");
+        File tmpDir = mkdirs(outputDirectory, "executable-war/tmp/");
         resolveDependency(pluginArtifact, tmpDir);
 
         UnArchiver unArchiver = getJarUnArchiver();
@@ -205,14 +215,10 @@ public class ExecutableWarMojo extends AbstractMojo {
         unArchiver.setOverwrite(true);
 
         try {
-            for (File file : tmpDir.listFiles()) {
-                getLog().info("FILE: " + file);
-                if (file.getName().endsWith(".jar"))
-                {
-                    unArchiver.setSourceFile(file);
-                    unArchiver.extract();
-                    FileUtils.moveFileToDirectory(file, libDir, false);
-                }
+            for (File file : tmpDir.listFiles(new JarFileFilter())) {
+                unArchiver.setSourceFile(file);
+                unArchiver.extract();
+                FileUtils.moveFileToDirectory(file, serverLibDir, false);
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to extract plugin artifact.", e);
@@ -221,7 +227,6 @@ public class ExecutableWarMojo extends AbstractMojo {
         try {
             for (File file : tmpDir.listFiles()) {
                 if (file.getName().startsWith("Main")) {
-                    System.err.println("JALLA: [" + file.getName() + "].");
                     FileUtils.moveFileToDirectory(file, generateDir, false);
                 }
 
@@ -232,6 +237,12 @@ public class ExecutableWarMojo extends AbstractMojo {
             }
         } catch (IOException e) {
             throw new RuntimeException("Unable to copy bootstrap resources.", e);
+        } finally {
+            try {
+                FileUtils.deleteDirectory(tmpDir);
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to delete tmp/ directory [" + tmpDir + "].", e);
+            }
         }
     }
 
@@ -245,17 +256,9 @@ public class ExecutableWarMojo extends AbstractMojo {
         ArtifactRepository repository = createFlatRepository(targetDir);
 
         try {
-            getLog().info("JILLA :: " + artifact);
-
             resolver.resolveAlways(artifact, asList(localRepository), repository);
-
-            getLog().info("JALLA [" + targetDir + "]");
-            for (String s : targetDir.list()) {
-                getLog().info("NAME: [" + s + "]");
-            }
-
         } catch (Exception e) {
-            throw new RuntimeException("Unable to resolve artifact '" + artifact + "' to directory '" + targetDir + "'.", e);
+            throw new RuntimeException("Unable to resolve artifact [" + artifact + "] to directory [" + targetDir + "].", e);
         }
     }
 
@@ -264,11 +267,11 @@ public class ExecutableWarMojo extends AbstractMojo {
         initRepositories();
 
         try {
-            ArtifactRepository repository = createFlatRepository(libDir);
+            ArtifactRepository repository = createFlatRepository(serverLibDir);
             resolver.resolveTransitively(getDependencies(), project.getArtifact(), repositories, repository, new MavenMetadataSource());
 
-            cleanNonJarFiles(libDir);
-            getLog().info("Runtime dependencies resolved to [" + libDir + "].");
+            cleanNonJarFiles(serverLibDir);
+            getLog().info("Runtime dependencies resolved to [" + serverLibDir + "].");
 
         } catch (Exception e) {
             throw new RuntimeException("Unable to resolve dependencies.", e);
