@@ -1,24 +1,27 @@
-== Executable GShell WAR ==
+== Executable WAR Plugin ==
 
-Maven plugin that creates an executable WAR that also runs a GShell that can access
-JMX Mbeans.
+Maven plugin that creates an executable WAR (Internal Jetty server).
 
       <plugin>
         <groupId>org.brylex.maven</groupId>
-        <artifactId>executable-gshell-war</artifactId>
+        <artifactId>executable-war-plugin</artifactId>
         <executions>
           <execution>
-            <id>doIt</id>
             <phase>package</phase>
             <goals>
               <goal>generate</goal>
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <applicationName>MyWeb</applicationName>
-        </configuration>
       </plugin>
+
+The application can be run in the following way:
+
+  > mvn clean install (builds the app)
+  > java -jar target/myapp-1.0-SNAPSHOT-standalone.war (runs the app)
+
+The WAR file includes a simple bootstrap class Main.class, which uses a custom classloader
+that resolves the Jetty runtime from the protected folder WEB-INF/server/ inside the WAR file.
 
 Enjoy!
 
