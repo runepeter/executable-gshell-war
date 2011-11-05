@@ -1,3 +1,5 @@
+package org.brylex.maven.plugin;
+
 import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -9,23 +11,24 @@ import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-public class Main {
+public abstract class AbstractMain {
 
-    public static void main(String[] args) {
+    protected AbstractMain(final Class<?> bootstrapClass) {
         JarClassLoader serverClassLoader = createClassLoader();
         Thread.currentThread().setContextClassLoader(serverClassLoader);
 
-        ProtectionDomain domain = Main.class.getProtectionDomain();
+        ProtectionDomain domain = bootstrapClass.getProtectionDomain();
         URL location = domain.getCodeSource().getLocation();
 
         try {
-            invokeClass("org.brylex.maven.plugin.EmbeddedJettyServer", new String[]{location.toExternalForm()});
+            System.out.println("Running bootstrap class [" + bootstrapClass.getName() + "]");
+            invokeClass(bootstrapClass.getName(), new String[]{location.toString()});
         } catch (Throwable e) {
-            throw new RuntimeException("Unable to launch embedded Jetty server.", e);
+            throw new RuntimeException("Unable to launch bootstrap class [" + bootstrapClass.getName() + "].", e);
         }
     }
 
-    public static void invokeClass(final String className, final String[] args) throws Exception {
+    public static void invokeClass(String className, String[] args) throws Exception {
         Method method = getMainMethod(className, args);
         method.invoke(null, new Object[]{args});
     }
@@ -43,8 +46,9 @@ public class Main {
         return method;
     }
 
-    private static JarClassLoader createClassLoader() {
+    protected static JarClassLoader createClassLoader() {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+
         URLClassLoader systemClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
 
         return new JarClassLoader(systemClassLoader.getURLs(), contextClassLoader);
@@ -61,7 +65,7 @@ public class Main {
             }
         }
 
-        private static boolean isServerJar(final String fileName) {
+        private static boolean isServerJar(String fileName) {
             return fileName != null && fileName.startsWith("WEB-INF/server/") && fileName.toLowerCase().endsWith(".jar");
         }
 
@@ -88,7 +92,7 @@ public class Main {
             }
         }
 
-        public JarClassLoader(final URL[] urls, final ClassLoader parent) {
+        public JarClassLoader(URL[] urls, ClassLoader parent) {
             super(urls, parent);
             try {
                 ProtectionDomain protectionDomain = getClass().getProtectionDomain();
@@ -106,7 +110,7 @@ public class Main {
                 }
 
             } catch (IOException e) {
-                throw new RuntimeException("Unable to instantiate server classloader.", e);
+                throw new RuntimeException("Unable to instantiate server classloader.");
             }
         }
 

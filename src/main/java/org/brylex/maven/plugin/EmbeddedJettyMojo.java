@@ -164,7 +164,7 @@ public class EmbeddedJettyMojo extends AbstractMojo
         try
         {
             Manifest manifest = new Manifest();
-            manifest.addConfiguredAttribute(new Manifest.Attribute("Main-Class", "Main"));
+            manifest.addConfiguredAttribute(new Manifest.Attribute("ExecutableWarMain-Class", "ExecutableWarMain"));
             JarArchiver archiver = getJarArchiver();
             archiver.addConfiguredManifest(manifest);
             archiver.setDestFile(new File(filename));
@@ -223,7 +223,7 @@ public class EmbeddedJettyMojo extends AbstractMojo
         {
             for (File file : tmpDir.listFiles())
             {
-                if (file.getName().startsWith("Main"))
+                if (file.getName().startsWith("ExecutableWarMain"))
                 {
                     FileUtils.moveFileToDirectory(file, generateDir, false);
                 }
