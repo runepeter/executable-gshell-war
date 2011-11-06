@@ -20,10 +20,10 @@ public abstract class AbstractMain {
         try {
             Class<?> bootstrapClass = serverClassLoader.loadClass(bootstrapClassName, true);
 
-            ProtectionDomain domain = bootstrapClass.getProtectionDomain();
-            URL location = domain.getCodeSource().getLocation();
+            ProtectionDomain domain = getClass().getProtectionDomain();
+            URL webappRoot = domain.getCodeSource().getLocation();
 
-            invokeClass(bootstrapClass.getName(), new String[]{location.toString()});
+            invokeClass(bootstrapClass.getName(), new String[]{webappRoot.toExternalForm()});
         } catch (Throwable e) {
             throw new RuntimeException("Unable to launch bootstrap class [" + bootstrapClassName + "].", e);
         }
