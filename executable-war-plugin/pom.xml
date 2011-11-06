@@ -129,5 +129,21 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.cyclopsgroup</groupId>
+                <artifactId>awss3-maven-wagon</artifactId>
+            </extension>
+        </extensions>
+    </build>
+
+    <distributionManagement>
+        <site>
+            <id>s3</id>
+            <url>s3://brylex.org/executable-war-plugin</url>
+        </site>
+    </distributionManagement>
+
 </project>
 

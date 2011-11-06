@@ -5,12 +5,6 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <artifactId>maven-plugins</artifactId>
-        <groupId>org.apache.maven.plugins</groupId>
-        <version>22</version>
-    </parent>
-
     <groupId>org.brylex.maven</groupId>
     <artifactId>executable-war-plugins</artifactId>
     <version>0.1-SNAPSHOT</version>
@@ -57,6 +51,10 @@
             <name>Nexus Release Repository</name>
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
+        <site>
+            <id>s3</id>
+            <url>s3://brylex.org/executable-war-plugin</url>
+        </site>
     </distributionManagement>
 
     <prerequisites>
@@ -97,6 +95,12 @@
     </dependencyManagement>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>org.cyclopsgroup</groupId>
+                <artifactId>awss3-maven-wagon</artifactId>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
