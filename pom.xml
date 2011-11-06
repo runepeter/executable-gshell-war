@@ -6,9 +6,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.brylex.maven</groupId>
-    <artifactId>executable-war-plugins</artifactId>
+    <artifactId>executable-war-plugin</artifactId>
     <version>0.1-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <packaging>maven-plugin</packaging>
 
     <organization>
         <name>Brylex org.</name>
@@ -64,6 +64,9 @@
     <properties>
         <maven.version>2.2.1</maven.version>
         <maven.archiver.version>2.4.1</maven.archiver.version>
+        <jetty.version>8.0.4.v20111024</jetty.version>
+        <gshell.version>2.6.5-SNAPSHOT</gshell.version>
+        <gshell.jmx.version>2.6.5.1-SNAPSHOT</gshell.jmx.version>
         <slf4j.version>1.6.2</slf4j.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -94,6 +97,114 @@
         </dependencies>
     </dependencyManagement>
 
+    <dependencies>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.1</version>
+        </dependency>
+
+        <!-- Maven dependencies: -->
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-plugin-api</artifactId>
+            <version>${maven.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-artifact</artifactId>
+            <version>${maven.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-model</artifactId>
+            <version>${maven.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-project</artifactId>
+            <version>${maven.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-core</artifactId>
+            <version>${maven.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-settings</artifactId>
+            <version>${maven.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-archiver</artifactId>
+            <version>${maven.archiver.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.16</version>
+        </dependency>
+
+
+        <!-- Jetty server dependencies: -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-jmx</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+
+        <!-- GShell dependencies: -->
+        <dependency>
+            <groupId>org.sonatype.gshell.ext</groupId>
+            <artifactId>gshell-gossip</artifactId>
+            <version>${gshell.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sonatype.gshell.ext</groupId>
+            <artifactId>gshell-plexus</artifactId>
+            <version>${gshell.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sonatype.gshell</groupId>
+            <artifactId>gshell-launcher</artifactId>
+            <version>${gshell.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sonatype.gshell.commands</groupId>
+            <artifactId>gshell-jmx</artifactId>
+            <version>${gshell.jmx.version}</version>
+        </dependency>
+
+
+        <!-- Test dependencies: -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugin-testing</groupId>
+            <artifactId>maven-plugin-testing-harness</artifactId>
+            <version>1.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+
     <build>
         <extensions>
             <extension>
@@ -113,10 +224,6 @@
             </plugin>
         </plugins>
     </build>
-
-    <modules>
-        <module>executable-war-plugin</module>
-    </modules>
 
 </project>
 
