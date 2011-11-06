@@ -1,8 +1,14 @@
 == Executable WAR Plugin ==
 
-Check out plugin site: http://s3.brylex.org/executable-war-plugin/index.html
+Check out plugin site: http://s3.brylex.org/executable-war-plugin/index.html (IN PROGRESS)
 
-Maven plugin that creates an executable WAR (Internal Jetty server).
+!! In order to use this plugin you need to clone and build my GShell fork that has built-in JMX support.
+!! This can be found at http://github.com/runepeter/gshell.
+
+Maven plugin that creates an executable WAR.
+
+ * Goal war creates an executable WAR with embedded Jetty.
+ * Goal gshell-war creates an executable WAR with embedded Jetty and JMX-enabled GShell.
 
       <plugin>
         <groupId>org.brylex.maven</groupId>
@@ -11,7 +17,8 @@ Maven plugin that creates an executable WAR (Internal Jetty server).
           <execution>
             <phase>package</phase>
             <goals>
-              <goal>generate</goal>
+              <goal>war</goal>
+              <!-- <goal>gshell-war</goal> -->
             </goals>
           </execution>
         </executions>
@@ -22,8 +29,24 @@ The application can be run in the following way:
   > mvn clean install (builds the app)
   > java -jar target/myapp-1.0-SNAPSHOT-standalone.war (runs the app)
 
-The WAR file includes a simple bootstrap class ExecutableWarMain.class, which uses a custom classloader
-that resolves the Jetty runtime from the protected folder WEB-INF/server/ inside the WAR file.
+The project WAR-file is slightly amended:
+
+  myapp-1.0-SNAPSHOT-standalone.war/
+    ...
+    org/
+      brylex/
+        maven/
+          plugin/
+            AbstractMain$JarClassLoader.class   - custom classloader used to bootstrap Jetty server.
+            AbstractMain.class                  - base bootstrap class.
+            ExecutableGShellWarMain.class       - bootstrap class that loads Jetty and GShell.
+    bootstrap.properties                        - bootstrap resource used by GShell.
+    log4j.properties                            - log4J configuration
+    ...
+    WEB-INF/
+      ...
+      server/                                   - contains all runtime dependencies for Jetty and GShell.
+      ...
 
 Enjoy!
 
