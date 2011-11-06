@@ -1,5 +1,7 @@
 == Executable WAR Plugin ==
 
+Check out plugin site: http://s3.brylex.org/executable-war-plugin/index.html
+
 Maven plugin that creates an executable WAR (Internal Jetty server).
 
       <plugin>
