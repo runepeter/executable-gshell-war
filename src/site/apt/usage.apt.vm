@@ -1,0 +1,13 @@
+Usage
+
+  This document intends to provide a brief introduction into using the <<<executable-war-plugin>>>.
+
+  The plugin can only be used by projects that has a <<<war>>> packaging type, and it's designed to be
+  attached to the <<<package>>> phase. 
+
+  The plugin can augment the project WAR artifact in two ways:
+
+* Embed a Jetty server and make the WAR file executable.
+* Embed a Jetty server and a JMX-enabled GShell and make the WAR file executable.
+
+
