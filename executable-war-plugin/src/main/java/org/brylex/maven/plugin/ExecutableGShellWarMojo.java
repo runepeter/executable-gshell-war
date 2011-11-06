@@ -28,6 +28,15 @@ public class ExecutableGShellWarMojo extends ExecutableWarMojo {
         groupId("org.sonatype.gshell.commands").artifactId("gshell-standard").version(resolveGShellVersion());
     }
 
+    @Override
+    protected void installBootstrapResources() {
+        super.installBootstrapResources();
+
+        Bootstrap bootstrap = new Bootstrap(getClass(), getProject().getGroupId(), getProject().getArtifactId(), getProject().getVersion());
+        bootstrap.setApplicationName("testing");
+        bootstrap.toDir(getGenerateDir());
+    }
+
     private String resolveJettyVersion() {
         return "8.0.4.v20111024"; // todo rpb: resolve from plugin pom (or manifest).
     }

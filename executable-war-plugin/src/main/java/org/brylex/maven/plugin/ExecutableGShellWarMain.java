@@ -7,7 +7,7 @@ public class ExecutableGShellWarMain extends AbstractMain {
     }
 
     public static void main(String[] args) {
-        new ExecutableGShellWarMain("org.brylex.maven.plugin.EmbeddedJettyServer");
+        new ExecutableGShellWarMain("org.brylex.maven.plugin.EmbeddedGShellLauncher");
     }
 
 }

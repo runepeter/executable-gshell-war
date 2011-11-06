@@ -7,7 +7,7 @@ public class ExecutableWarMain extends AbstractMain {
     }
 
     public static void main(String[] args) {
-        new ExecutableWarMain("org.brylex.maven.plugin.EmbeddedJettyServer");
+        new ExecutableWarMain("org.brylex.maven.plugin.jetty.EmbeddedJettyServer");
     }
 
 }
