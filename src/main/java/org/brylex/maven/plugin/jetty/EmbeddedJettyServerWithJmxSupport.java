@@ -11,11 +11,11 @@ import java.lang.management.ManagementFactory;
 import java.net.URL;
 
 public class EmbeddedJettyServerWithJmxSupport {
-    public EmbeddedJettyServerWithJmxSupport(final URL webappRoot) {
+    public EmbeddedJettyServerWithJmxSupport(final URL webappRoot, final int port) {
         Server server = new Server();
 
         Connector connector = new SocketConnector();
-        connector.setPort(8080);
+        connector.setPort(port);
         server.setConnectors(new Connector[]{connector});
 
         WebAppContext webapp = new WebAppContext();

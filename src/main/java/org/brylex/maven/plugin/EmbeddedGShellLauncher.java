@@ -34,6 +34,8 @@ public class EmbeddedGShellLauncher extends GuiceMainSupport {
     private final String version;
 
     private final String applicationName;
+    private final String applicationMbean;
+    private final int applicationPort;
 
     public EmbeddedGShellLauncher(final URL webRoot) {
         this.webappRoot = webRoot;
@@ -56,8 +58,9 @@ public class EmbeddedGShellLauncher extends GuiceMainSupport {
         this.groupId = properties.getProperty("project.groupId");
         this.artifactId = properties.getProperty("project.artifactId");
         this.version = properties.getProperty("project.version");
-
         this.applicationName = properties.getProperty("application.name");
+        this.applicationMbean = properties.getProperty("application.mbean");
+        this.applicationPort = Integer.parseInt(properties.getProperty("application.port"));
     }
 
     public static void main(String[] args) throws Exception {
@@ -72,7 +75,7 @@ public class EmbeddedGShellLauncher extends GuiceMainSupport {
         Shell shell = super.createShell();
 
         if (!shell.getVariables().contains(MBeanCommand.JMX_MBEAN)) {
-            shell.getVariables().set(MBeanCommand.JMX_MBEAN, "<NO MBEAN>");
+            shell.getVariables().set(MBeanCommand.JMX_MBEAN, applicationMbean == null ? "<NO MBEAN>" : applicationMbean);
         }
 
         return shell;
@@ -90,7 +93,7 @@ public class EmbeddedGShellLauncher extends GuiceMainSupport {
         ExecutorService executorService = Executors.newCachedThreadPool();
         executorService.execute(new Runnable() {
             public void run() {
-                new EmbeddedJettyServerWithJmxSupport(webappRoot);
+                new EmbeddedJettyServerWithJmxSupport(webappRoot, applicationPort);
             }
         });
 
@@ -118,6 +121,8 @@ public class EmbeddedGShellLauncher extends GuiceMainSupport {
                     + "#    Group ID: " + groupId + "\n"
                     + "# Artifact ID: " + artifactId + "\n"
                     + "#     Version: " + version + "\n"
+                    + "#\n"
+                    + "#   HTTP Port: " + applicationPort + "\n"
                     + "#####################################################\n";
         }
 

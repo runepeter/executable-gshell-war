@@ -3,11 +3,15 @@ package org.brylex.maven.plugin;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -48,14 +52,17 @@ public abstract class AbstractMain {
     }
 
     protected static JarClassLoader createClassLoader() {
-        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         URLClassLoader systemClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
 
-        return new JarClassLoader(systemClassLoader.getURLs(), contextClassLoader);
+        return new JarClassLoader(systemClassLoader, contextClassLoader);
     }
 
     public static class JarClassLoader extends URLClassLoader {
+
+        private final URLClassLoader systemClassLoader;
+
         private static void close(Closeable closeable) {
             if (closeable != null) {
                 try {
@@ -93,8 +100,29 @@ public abstract class AbstractMain {
             }
         }
 
-        public JarClassLoader(URL[] urls, ClassLoader parent) {
-            super(urls, parent);
+        private static URL[] urls(URL[] urls, URL... additionalUrls) {
+
+            URL[] array = new URL[urls.length + additionalUrls.length];
+
+            List<URL> list = new ArrayList<URL>(Arrays.asList(urls));
+            for (URL additionalUrl : additionalUrls) {
+                list.add(additionalUrl);
+            }
+
+            return list.toArray(array);
+        }
+
+        private static URL url(String url) {
+            try {
+                return new URL(url);
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        public JarClassLoader(URLClassLoader systemClassLoader, ClassLoader parent) {
+            super(urls(systemClassLoader.getURLs(), url("file://./etc/")), parent);
+            this.systemClassLoader = systemClassLoader;
             try {
                 ProtectionDomain protectionDomain = getClass().getProtectionDomain();
                 CodeSource codeSource = protectionDomain.getCodeSource();
@@ -130,6 +158,7 @@ public abstract class AbstractMain {
 
         @Override
         protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+
             try {
                 Class<?> clazz = findLoadedClass(name);
                 if (clazz == null) {

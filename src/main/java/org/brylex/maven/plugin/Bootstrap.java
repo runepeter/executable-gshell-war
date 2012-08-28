@@ -15,6 +15,8 @@ public class Bootstrap
     private final String version;
 
     private String applicationName = null;
+    private String applicationMbean = null;
+    private String applicationPort = null;
 
     public Bootstrap(final Class<?> mainClass, final String groupId, final String artifactId, final String version)
     {
@@ -27,6 +29,15 @@ public class Bootstrap
     public void setApplicationName(String applicationName)
     {
         this.applicationName = applicationName;
+    }
+
+    public void setApplicationMbean(String applicationMbean)
+    {
+        this.applicationMbean = applicationMbean;
+    }
+
+    public void setApplicationPort(String applicationPort) {
+        this.applicationPort = applicationPort;
     }
 
     public void toDir(final File dir)
@@ -46,6 +57,8 @@ public class Bootstrap
         properties.put("project.artifactId", artifactId);
         properties.put("project.version", version);
         properties.put("application.name", applicationName);
+        properties.put("application.mbean", applicationMbean);
+        properties.put("application.port", applicationPort);
 
         FileWriter writer = null;
         try

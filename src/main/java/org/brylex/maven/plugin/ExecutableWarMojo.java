@@ -46,7 +46,7 @@ public class ExecutableWarMojo extends AbstractExecutableWarMojo {
     }
 
     private String resolveSlf4JVersion() {
-        return "1.6.2"; // todo rpb: resolve from plugin pom.
+        return "1.6.6"; // todo rpb: resolve from plugin pom.
     }
 
     private String resolveLog4JVersion() {

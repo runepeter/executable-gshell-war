@@ -1,8 +1,5 @@
 package org.brylex.maven.plugin;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-
 /**
  * @author <a href="runepeter@gmail.com">Rune Peter Bjørnstad</a>
  * @version $Id$
@@ -12,6 +9,27 @@ import org.apache.maven.plugin.MojoFailureException;
  * @requiresDependencyResolution runtime
  */
 public class ExecutableGShellWarMojo extends ExecutableWarMojo {
+
+    /**
+     * The application identifier.
+     *
+     * @parameter default-value="${project.artifactId}"
+     */
+    private String applicationName;
+
+    /**
+     * The default mbean to start with.
+     *
+     * @parameter default-value="<NO MBEAN>"
+     */
+    private String mbean;
+
+    /**
+     * The Jetty HTTP server port
+     *
+     * @parameter default-value="8080"
+     */
+    private String port;
 
     public ExecutableGShellWarMojo() {
         super(ExecutableGShellWarMain.class);
@@ -31,9 +49,10 @@ public class ExecutableGShellWarMojo extends ExecutableWarMojo {
     @Override
     protected void installBootstrapResources() {
         super.installBootstrapResources();
-
         Bootstrap bootstrap = new Bootstrap(getClass(), getProject().getGroupId(), getProject().getArtifactId(), getProject().getVersion());
-        bootstrap.setApplicationName("testing");
+        bootstrap.setApplicationName(applicationName);
+        bootstrap.setApplicationMbean(mbean);
+        bootstrap.setApplicationPort(port);
         bootstrap.toDir(getGenerateDir());
     }
 
@@ -42,7 +61,7 @@ public class ExecutableGShellWarMojo extends ExecutableWarMojo {
     }
 
     private String resolveGShellVersion() {
-        return "2.6.5-SNAPSHOT";
+        return "2.6.5";
     }
 
     private String resolveGShellExtVersion() {

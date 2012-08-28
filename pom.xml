@@ -68,9 +68,9 @@
         <maven.version>2.2.1</maven.version>
         <maven.archiver.version>2.4.1</maven.archiver.version>
         <jetty.version>8.0.4.v20111024</jetty.version>
-        <gshell.version>2.6.5-SNAPSHOT</gshell.version>
+        <gshell.version>2.6.5</gshell.version>
         <gshell.jmx.version>2.6.5.1-SNAPSHOT</gshell.jmx.version>
-        <slf4j.version>1.6.2</slf4j.version>
+        <slf4j.version>1.6.6</slf4j.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -207,7 +207,6 @@
         </dependency>
     </dependencies>
 
-
     <build>
         <extensions>
             <extension>
@@ -223,6 +222,7 @@
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <plugin>

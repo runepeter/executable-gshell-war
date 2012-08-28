@@ -94,6 +94,7 @@ public abstract class AbstractExecutableWarMojo extends AbstractMojo {
      * @readonly
      */
     private File runtimeLibDir;
+
     /**
      * Used to look up Artifacts in the remote repository.
      *
@@ -286,7 +287,6 @@ public abstract class AbstractExecutableWarMojo extends AbstractMojo {
     }
 
     public void setGenerateDir(final File generateDir) {
-        getLog().info("SETTER: " + generateDir);
         this.generateDir = generateDir;
     }
 
@@ -295,7 +295,6 @@ public abstract class AbstractExecutableWarMojo extends AbstractMojo {
     }
 
     public void setRuntimeLibDir(final File runtimeLibDir) {
-        getLog().info("SETTER: " + runtimeLibDir);
         this.runtimeLibDir = runtimeLibDir;
     }
 
@@ -304,7 +303,6 @@ public abstract class AbstractExecutableWarMojo extends AbstractMojo {
     }
 
     public void setResolver(final ArtifactResolver resolver) {
-        getLog().info("SETTER: " + resolver);
         this.resolver = resolver;
     }
 
@@ -317,6 +315,7 @@ public abstract class AbstractExecutableWarMojo extends AbstractMojo {
         try {
             Manifest manifest = new Manifest();
             manifest.addConfiguredAttribute(new Manifest.Attribute("Main-Class", mainClass.getName()));
+            manifest.addConfiguredAttribute(new Manifest.Attribute("Class-Path", "./etc/"));
             JarArchiver archiver = getJarArchiver();
             archiver.addConfiguredManifest(manifest);
             archiver.setDestFile(warFile);

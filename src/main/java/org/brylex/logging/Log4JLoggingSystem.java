@@ -20,7 +20,7 @@ public class Log4JLoggingSystem implements LoggingSystem
         Object factoryRef = LoggerFactory.getILoggerFactory();
         if (!"org.slf4j.impl.Log4jLoggerFactory".equals(factoryRef.getClass().getName()))
         {
-            throw new IllegalStateException("SLF4J is NOT configured to use log4j.");
+            throw new IllegalStateException("SLF4J is NOT configured to use log4j (but [" + factoryRef.getClass().getName() + "])");
         }
 
         org.apache.log4j.Level[] source = {
